@@ -614,18 +614,18 @@ bool librtf::write_paragraphformat()
     char rtfText[4096] = {0};
 
     // Format new paragraph
-    char text[1024] = {0};
+    string text;
 
-    if ( rtfParFormat.newParagraph )
-        strcats( text, "\\par", 1024 );
+    if ( rtfParFormat.newParagraph ) 
+        text += "\\par";
 
-    if ( rtfParFormat.defaultParagraph )
-        strcats( text, "\\pard", 1024 );
+    if ( rtfParFormat.defaultParagraph ) 
+        text += "\\pard";
 
     if ( rtfParFormat.tableText == false )
-        strcats( text, "\\plain", 1024 );
+        text += "\\plain";
     else
-        strcats( text, "\\intbl", 1024 );
+        text += "\\intbl";
 
     switch ( rtfParFormat.paragraphBreak )
     {
@@ -635,17 +635,17 @@ bool librtf::write_paragraphformat()
 
         // Page break;
         case RTF_PARAGRAPHBREAK_PAGE:
-            strcats( text, "\\page", 1024 );
+            text += "\\page";
             break;
 
         // Column break;
         case RTF_PARAGRAPHBREAK_COLUMN:
-            strcats( text, "\\column", 1024 );
+            text += "\\column";
             break;
 
         // Line break;
         case RTF_PARAGRAPHBREAK_LINE:
-            strcats( text, "\\line", 1024 );
+            text += "\\line";
             break;
     }
 
@@ -654,22 +654,22 @@ bool librtf::write_paragraphformat()
     {
         // Left aligned paragraph
         case RTF_PARAGRAPHALIGN_LEFT:
-            strcats( text, "\\ql", 1024 );
+            text += "\\ql";
             break;
 
         // Center aligned paragraph
         case RTF_PARAGRAPHALIGN_CENTER:
-            strcats( text, "\\qc", 1024 );
+            text += "\\qc";
             break;
 
         // Right aligned paragraph
         case RTF_PARAGRAPHALIGN_RIGHT:
-            strcats( text, "\\qr", 1024 );
+            text += "\\qr";
             break;
 
         // Justified aligned paragraph
         case RTF_PARAGRAPHALIGN_JUSTIFY:
-            strcats( text, "\\qj", 1024 );
+            text += "\\qj";
             break;
     }
 
@@ -685,17 +685,17 @@ bool librtf::write_paragraphformat()
 
             // Centered tab
             case RTF_PARAGRAPHTABKIND_CENTER:
-                strcats( text, "\\tqc", 1024 );
+                text += "\\tqc";
                 break;
 
             // Flush-right tab
             case RTF_PARAGRAPHTABKIND_RIGHT:
-                strcats( text, "\\tqr", 1024 );
+                text += "\\tqr";
                 break;
 
             // Decimal tab
             case RTF_PARAGRAPHTABKIND_DECIMAL:
-                strcats( text, "\\tqdec", 1024 );
+                text += "\\tqdec";
                 break;
         }
 
@@ -708,39 +708,39 @@ bool librtf::write_paragraphformat()
 
             // Leader dots
             case RTF_PARAGRAPHTABLEAD_DOT:
-                strcats( text, "\\tldot", 1024 );
+                text += "\\tldot";
                 break;
 
             // Leader middle dots
             case RTF_PARAGRAPHTABLEAD_MDOT:
-                strcats( text, "\\tlmdot", 1024 );
+                text += "\\tlmdot";
                 break;
 
             // Leader hyphens
             case RTF_PARAGRAPHTABLEAD_HYPH:
-                strcats( text, "\\tlhyph", 1024 );
+                text += "\\tlhyph";
                 break;
 
             // Leader underline
             case RTF_PARAGRAPHTABLEAD_UNDERLINE:
-                strcats( text, "\\tlul", 1024 );
+                text += "\\tlul";
                 break;
 
             // Leader thick line
             case RTF_PARAGRAPHTABLEAD_THICKLINE:
-                strcats( text, "\\tlth", 1024 );
+                text += "\\tlth";
                 break;
 
             // Leader equal sign
             case RTF_PARAGRAPHTABLEAD_EQUAL:
-                strcats( text, "\\tleq", 1024 );
+                text += "\\tleq";
                 break;
         }
 
         // Set tab position
-        char tb[10] = {0};
-        snprintf( tb, 10, "\\tx%d", rtfParFormat.TABS.tabPosition );
-        strcats( text, tb, 1024 );
+        char tb[20] = {0};
+        snprintf( tb, 20, "\\tx%d", rtfParFormat.TABS.tabPosition );
+        text += tb;
     }
 
     // Format bullets and numbering
@@ -752,13 +752,13 @@ bool librtf::write_paragraphformat()
                   rtfParFormat.NUMS.numsLevel,
                   rtfParFormat.NUMS.numsSpace,
                   rtfParFormat.NUMS.numsChar );
-        strcats( text, nums, 1024 );
+        text += nums;
     }
 
     // Format paragraph borders
     if ( rtfParFormat.paragraphBorders == true )
     {
-        char border[1024] = {0};
+        string border;
 
         // Format paragraph border kind
         switch (rtfParFormat.BORDERS.borderKind)
@@ -769,33 +769,36 @@ bool librtf::write_paragraphformat()
 
             // Border top
             case RTF_PARAGRAPHBORDERKIND_TOP:
-                strcats( border, "\\brdrt", 1024 );
+                border += "\\brdrt";
                 break;
 
             // Border bottom
             case RTF_PARAGRAPHBORDERKIND_BOTTOM:
-                strcats( border, "\\brdrb", 1024 );
+                border += "\\brdrb";
                 break;
 
             // Border left
             case RTF_PARAGRAPHBORDERKIND_LEFT:
-                strcats( border, "\\brdrl", 1024 );
+                border += "\\brdrl";
                 break;
 
             // Border right
             case RTF_PARAGRAPHBORDERKIND_RIGHT:
-                strcats( border, "\\brdrr", 1024 );
+                border += "\\brdrr";
                 break;
 
             // Border box
             case RTF_PARAGRAPHBORDERKIND_BOX:
-                strcats( border, "\\box", 1024 );
+                border += "\\box";
                 break;
         }
 
         // Format paragraph border type
         const char *br = librtf::get_bordername( rtfParFormat.BORDERS.borderType );
-        strcats( border, br, 1024 );
+        if ( br != NULL )
+        {
+            border + br;
+        }
 
         // Set paragraph border width
         char brd[100] = {0};
@@ -803,15 +806,15 @@ bool librtf::write_paragraphformat()
                   "\\brdrw%d\\brsp%d",
                   rtfParFormat.BORDERS.borderWidth,
                   rtfParFormat.BORDERS.borderSpace );
-        strcats( border, brd, 1024 );
-        strcats( text, border, 1024 );
+        border += brd;
+        text += border;
 
         // Set paragraph border color
         char brdcol[100] = {0};
         snprintf( brdcol, 100,
                   "\\brdrcf%d",
                   rtfParFormat.BORDERS.borderColor );
-        strcats( text, brdcol, 1024 );
+        text += brdcol;
     }
 
     // Format paragraph shading
@@ -822,7 +825,8 @@ bool librtf::write_paragraphformat()
 
         // Format paragraph shading
         const char* sh = librtf::get_shadingname( rtfParFormat.SHADING.shadingType, false );
-        strcats( text, sh, 1024 );
+        if ( sh != NULL )
+            text += sh;
 
         // Set paragraph shading color
         char shcol[100] = {0};
@@ -830,13 +834,14 @@ bool librtf::write_paragraphformat()
                   "\\cfpat%d\\cbpat%d",
                   rtfParFormat.SHADING.shadingFillColor,
                   rtfParFormat.SHADING.shadingBkColor );
-        strcats( text, shcol, 1024 );
+        text += shcol;
     }
 
     // Format paragraph font
-    char font[1024] = {0};
+    string font;
+    char tmps[1024] = {0};
 
-    snprintf( font, 1024,
+    snprintf( tmps, 1024,
               "\\animtext%d\\expndtw%d\\kerning%d\\charscalex%d\\f%d\\fs%d\\cf%d",
               rtfParFormat.CHARACTER.animatedCharacter,
               rtfParFormat.CHARACTER.expandCharacter,
@@ -846,147 +851,149 @@ bool librtf::write_paragraphformat()
               rtfParFormat.CHARACTER.fontSize,
               rtfParFormat.CHARACTER.foregroundColor );
 
+    font += tmps;
+
     if ( rtfParFormat.CHARACTER.boldCharacter )
-        strcats( font, "\\b", 1024 );
+        font += "\\b";
     else
-        strcats( font, "\\b0", 1024 );
+        font += "\\b0";
 
     if ( rtfParFormat.CHARACTER.capitalCharacter )
-        strcats( font, "\\caps", 1024 );
+        font += "\\caps";
     else
-        strcats( font, "\\caps0", 1024 );
+        font += "\\caps0";
 
     if ( rtfParFormat.CHARACTER.doublestrikeCharacter )
-        strcats( font, "\\striked1", 1024 );
+        font += "\\striked1";
     else
-        strcats( font, "\\striked0", 1024 );
+        font += "\\striked0";
 
     if ( rtfParFormat.CHARACTER.embossCharacter )
-        strcats( font, "\\embo", 1024 );
+        font += "\\embo";
     if ( rtfParFormat.CHARACTER.engraveCharacter )
-        strcats( font, "\\impr", 1024 );
+        font += "\\impr";
 
     if ( rtfParFormat.CHARACTER.italicCharacter )
-        strcats( font, "\\i", 1024 );
+        font += "\\i";
     else
-        strcats( font, "\\i0", 1024 );
+        font += "\\i0";
 
     if ( rtfParFormat.CHARACTER.outlineCharacter )
-        strcats( font, "\\outl", 1024 );
+        font += "\\outl";
     else
-        strcats( font, "\\outl0", 1024 );
+        font += "\\outl0";
 
     if ( rtfParFormat.CHARACTER.shadowCharacter )
-        strcats( font, "\\shad", 1024 );
+        font += "\\shad";
     else
-        strcats( font, "\\shad0", 1024 );
+        font += "\\shad0";
 
     if ( rtfParFormat.CHARACTER.smallcapitalCharacter )
-        strcats( font, "\\scaps", 1024 );
+        font += "\\scaps";
     else
-        strcats( font, "\\scaps0", 1024 );
+        font += "\\scaps0";
 
     if ( rtfParFormat.CHARACTER.strikeCharacter )
-        strcats( font, "\\strike", 1024 );
+        font += "\\strike";
     else
-        strcats( font, "\\strike0", 1024 );
+        font += "\\strike0";
 
     if ( rtfParFormat.CHARACTER.subscriptCharacter )
-        strcats( font, "\\sub", 1024 );
+        font += "\\sub";
 
     if ( rtfParFormat.CHARACTER.superscriptCharacter )
-        strcats( font, "\\super", 1024 );
+        font += "\\super";
 
     switch (rtfParFormat.CHARACTER.underlineCharacter)
     {
         // None underline
         case 0:
-            strcats( font, "\\ulnone", 1024 );
+            font += "\\ulnone";
             break;
 
         // Continuous underline
         case 1:
-            strcats( font, "\\ul", 1024 );
+            font += "\\ul";
             break;
 
         // Dotted underline
         case 2:
-            strcats( font, "\\uld", 1024 );
+            font += "\\uld";
             break;
 
         // Dashed underline
         case 3:
-            strcats( font, "\\uldash", 1024 );
+            font += "\\uldash";
             break;
 
         // Dash-dotted underline
         case 4:
-            strcats( font, "\\uldashd", 1024 );
+            font += "\\uldashd";
             break;
 
         // Dash-dot-dotted underline
         case 5:
-            strcats( font, "\\uldashdd", 1024 );
+            font += "\\uldashdd";
             break;
 
         // Double underline
         case 6:
-            strcats( font, "\\uldb", 1024 );
+            font += "\\uldb";
             break;
 
         // Heavy wave underline
         case 7:
-            strcats( font, "\\ulhwave", 1024 );
+            font += "\\ulhwave";
             break;
 
         // Long dashed underline
         case 8:
-            strcats( font, "\\ulldash", 1024 );
+            font += "\\ulldash";
             break;
 
         // Thick underline
         case 9:
-            strcats( font, "\\ulth", 1024 );
+            font += "\\ulth";
             break;
 
         // Thick dotted underline
         case 10:
-            strcats( font, "\\ulthd", 1024 );
+            font += "\\ulthd";
             break;
 
         // Thick dashed underline
         case 11:
-            strcats( font, "\\ulthdash", 1024 );
+            font += "\\ulthdash";
             break;
 
         // Thick dash-dotted underline
         case 12:
-            strcats( font, "\\ulthdashd", 1024 );
+            font += "\\ulthdashd";
             break;
 
         // Thick dash-dot-dotted underline
         case 13:
-            strcats( font, "\\ulthdashdd", 1024 );
+            font += "\\ulthdashdd";
             break;
 
         // Thick long dashed underline
         case 14:
-            strcats( font, "\\ulthldash", 1024 );
+            font += "\\ulthldash";
             break;
 
         // Double wave underline
         case 15:
-            strcats( font, "\\ululdbwave", 1024 );
+            font += "\\ululdbwave";
             break;
 
         // Word underline
         case 16:
-            strcats( font, "\\ulw", 1024 );
+            font += "\\ulw";
             break;
 
         // Wave underline
         case 17:
-            strcats( font, "\\ulwave", 1024 );
+            font += "\\ulwave";
             break;
     }
 
@@ -995,14 +1002,14 @@ bool librtf::write_paragraphformat()
     {
         snprintf( rtfText, 4096,
                   "\n%s\\fi%d\\li%d\\ri%d\\sb%d\\sa%d\\sl%d%s %s",
-                  text,
+                  text.c_str(),
                   rtfParFormat.firstLineIndent,
                   rtfParFormat.leftIndent,
                   rtfParFormat.rightIndent,
                   rtfParFormat.spaceBefore,
                   rtfParFormat.spaceAfter,
                   rtfParFormat.lineSpacing,
-                  font,
+                  font.c_str(),
                   rtfParFormat.paragraphText );
     }
     else
@@ -1032,21 +1039,24 @@ RTF_ERROR_TYPE librtf::start_paragraph( const char* text, bool newPar )
     // Set error flag
     RTF_ERROR_TYPE error = RTF_ERROR;
 
-    // Copy paragraph text
-    rtfParFormat.paragraphText = new char[strlen(text)];
-
-    if ( rtfParFormat.paragraphText != NULL )
+    if ( text != NULL )
     {
-        strcpy( rtfParFormat.paragraphText, text );
+        // Copy paragraph text
+        rtfParFormat.paragraphText = new char[strlen(text)];
 
-        // Set new paragraph
-        rtfParFormat.newParagraph = newPar;
+        if ( rtfParFormat.paragraphText != NULL )
+        {
+            strcpy( rtfParFormat.paragraphText, text );
 
-        // Starts new RTF paragraph
-        if( librtf::write_paragraphformat() == false )
-            error = RTF_PARAGRAPHFORMAT_ERROR;
-        else
-            error = RTF_SUCCESS;
+            // Set new paragraph
+            rtfParFormat.newParagraph = newPar;
+
+            // Starts new RTF paragraph
+            if( librtf::write_paragraphformat() == false )
+                error = RTF_PARAGRAPHFORMAT_ERROR;
+            else
+                error = RTF_SUCCESS;
+        }
     }
 
     // Return error flag
@@ -1275,24 +1285,24 @@ RTF_ERROR_TYPE librtf::start_tablerow()
     // Set error flag
     RTF_ERROR_TYPE error = RTF_SUCCESS;
 
-    char tblrw[40] = {0};
+    string tblrw;
 
     // Format table row aligment
     switch (rtfRowFormat.rowAligment)
     {
         // Left align
         case RTF_ROWTEXTALIGN_LEFT:
-            strcats( tblrw, "\\trql", 40 );
+            tblrw = "\\trql";
             break;
 
         // Center align
         case RTF_ROWTEXTALIGN_CENTER:
-            strcats( tblrw, "\\trqc", 40 );
+            tblrw = "\\trqc";
             break;
 
         // Right align
         case RTF_ROWTEXTALIGN_RIGHT:
-            strcats( tblrw, "\\trqr", 40 );
+            tblrw = "\\trqr";
             break;
     }
 
@@ -1301,7 +1311,7 @@ RTF_ERROR_TYPE librtf::start_tablerow()
 
     snprintf( rtfText, 1024,
               "\n\\trowd\\trgaph115%s\\trleft%d\\trrh%d\\trpaddb%d\\trpaddfb3\\trpaddl%d\\trpaddfl3\\trpaddr%d\\trpaddfr3\\trpaddt%d\\trpaddft3",
-              tblrw,
+              tblrw.c_str(),
               rtfRowFormat.rowLeftMargin,
               rtfRowFormat.rowHeight,
               rtfRowFormat.marginTop,
@@ -1417,13 +1427,16 @@ RTF_ERROR_TYPE librtf::start_tablecell(int rightMargin)
         // Bottom cell border
         const char* border = librtf::get_bordername(rtfCellFormat.borderBottom.BORDERS.borderType);
 
-        snprintf( tbclbrb, 1024,
-                  "%s%s\\brdrw%d\\brsp%d\\brdrcf%d",
-                  "\\clbrdrb",
-                  border,
-                  rtfCellFormat.borderBottom.BORDERS.borderWidth,
-                  rtfCellFormat.borderBottom.BORDERS.borderSpace,
-                  rtfCellFormat.borderBottom.BORDERS.borderColor );
+        if ( border != NULL )
+        {
+            snprintf( tbclbrb, 1024,
+                      "%s%s\\brdrw%d\\brsp%d\\brdrcf%d",
+                      "\\clbrdrb",
+                      border,
+                      rtfCellFormat.borderBottom.BORDERS.borderWidth,
+                      rtfCellFormat.borderBottom.BORDERS.borderSpace,
+                      rtfCellFormat.borderBottom.BORDERS.borderColor );
+        }
     }
 
     if ( rtfCellFormat.borderLeft.border == true )
@@ -1431,55 +1444,66 @@ RTF_ERROR_TYPE librtf::start_tablecell(int rightMargin)
         // Left cell border
         const char* border = librtf::get_bordername(rtfCellFormat.borderLeft.BORDERS.borderType);
 
-        snprintf( tbclbrl, 1024,
-                  "%s%s\\brdrw%d\\brsp%d\\brdrcf%d",
-                  "\\clbrdrl",
-                  border,
-                  rtfCellFormat.borderLeft.BORDERS.borderWidth,
-                  rtfCellFormat.borderLeft.BORDERS.borderSpace,
-                  rtfCellFormat.borderLeft.BORDERS.borderColor );
+        if ( border != NULL )
+        {
+            snprintf( tbclbrl, 1024,
+                      "%s%s\\brdrw%d\\brsp%d\\brdrcf%d",
+                      "\\clbrdrl",
+                      border,
+                      rtfCellFormat.borderLeft.BORDERS.borderWidth,
+                      rtfCellFormat.borderLeft.BORDERS.borderSpace,
+                      rtfCellFormat.borderLeft.BORDERS.borderColor );
+        }
     }
     if ( rtfCellFormat.borderRight.border == true )
     {
         // Right cell border
         const char* border = librtf::get_bordername(rtfCellFormat.borderRight.BORDERS.borderType);
-
-        snprintf( tbclbrr, 1024,
-                  "%s%s\\brdrw%d\\brsp%d\\brdrcf%d",
-                  "\\clbrdrr",
-                  border,
-                  rtfCellFormat.borderRight.BORDERS.borderWidth,
-                  rtfCellFormat.borderRight.BORDERS.borderSpace,
-                  rtfCellFormat.borderRight.BORDERS.borderColor );
+        
+        if ( border != NULL )
+        {
+            snprintf( tbclbrr, 1024,
+                      "%s%s\\brdrw%d\\brsp%d\\brdrcf%d",
+                      "\\clbrdrr",
+                      border,
+                      rtfCellFormat.borderRight.BORDERS.borderWidth,
+                      rtfCellFormat.borderRight.BORDERS.borderSpace,
+                      rtfCellFormat.borderRight.BORDERS.borderColor );
+        }
     }
     if ( rtfCellFormat.borderTop.border == true )
     {
         // Top cell border
         const char* border = librtf::get_bordername(rtfCellFormat.borderTop.BORDERS.borderType);
-
-        snprintf( tbclbrt, 1024,
-                  "%s%s\\brdrw%d\\brsp%d\\brdrcf%d",
-                  "\\clbrdrt",
-                  border,
-                  rtfCellFormat.borderTop.BORDERS.borderWidth,
-                  rtfCellFormat.borderTop.BORDERS.borderSpace,
-                  rtfCellFormat.borderTop.BORDERS.borderColor );
+        if ( border != NULL )
+        {
+            snprintf( tbclbrt, 1024,
+                      "%s%s\\brdrw%d\\brsp%d\\brdrcf%d",
+                      "\\clbrdrt",
+                      border,
+                      rtfCellFormat.borderTop.BORDERS.borderWidth,
+                      rtfCellFormat.borderTop.BORDERS.borderSpace,
+                      rtfCellFormat.borderTop.BORDERS.borderColor );
+        }
     }
 
     // Format table cell shading
-    char shading[100] = {0};
+    char shading[128] = {0};
 
     if ( rtfCellFormat.cellShading == true )
     {
         const char* sh = librtf::get_shadingname( rtfCellFormat.SHADING.shadingType, true );
 
-        // Set paragraph shading color
-        snprintf( shading, 100,
-                  "%s\\clshdgn%d\\clcfpat%d\\clcbpat%d",
-                  sh,
-                  rtfCellFormat.SHADING.shadingIntensity,
-                  rtfCellFormat.SHADING.shadingFillColor,
-                  rtfCellFormat.SHADING.shadingBkColor );
+        if ( sh != NULL )
+        {
+            // Set paragraph shading color
+            snprintf( shading, 128,
+                      "%s\\clshdgn%d\\clcfpat%d\\clcbpat%d",
+                      sh,
+                      rtfCellFormat.SHADING.shadingIntensity,
+                      rtfCellFormat.SHADING.shadingFillColor,
+                      rtfCellFormat.SHADING.shadingBkColor );
+        }
     }
 
     // Writes RTF table data
@@ -1532,7 +1556,8 @@ RTF_TABLEROW_FORMAT* librtf::get_tablerowformat()
 void librtf::set_tablerowformat(RTF_TABLEROW_FORMAT* rf)
 {
     // Set new RTF table row formatting properties
-    memcpy( &rtfRowFormat, rf, sizeof(RTF_TABLEROW_FORMAT) );
+    if ( rf != NULL )
+        memcpy( &rtfRowFormat, rf, sizeof(RTF_TABLEROW_FORMAT) );
 }
 
 
@@ -1548,119 +1573,122 @@ RTF_TABLECELL_FORMAT* librtf::get_tablecellformat()
 void librtf::set_tablecellformat(RTF_TABLECELL_FORMAT* cf)
 {
     // Set new RTF table cell formatting properties
-    memcpy( &rtfCellFormat, cf, sizeof(RTF_TABLECELL_FORMAT) );
+    if ( cf != NULL )
+        memcpy( &rtfCellFormat, cf, sizeof(RTF_TABLECELL_FORMAT) );
 }
 
 // Gets border name
 const char* librtf::get_bordername(int border_type)
 {
-    static char border[20] = {0};
+    static string border;
 
-    memset( border, 0 , 20 );
+    if ( border.size() > 0 )
+        border.clear();
 
     switch (border_type)
     {
         // Single-thickness border
         case RTF_PARAGRAPHBORDERTYPE_STHICK:
-            strcpy( border, "\\brdrs" );
+            border = "\\brdrs";
             break;
 
         // Double-thickness border
         case RTF_PARAGRAPHBORDERTYPE_DTHICK:
-            strcpy( border, "\\brdrth" );
+            border = "\\brdrth";
             break;
 
         // Shadowed border
         case RTF_PARAGRAPHBORDERTYPE_SHADOW:
-            strcpy( border, "\\brdrsh" );
+            border = "\\brdrsh";
             break;
 
         // Double border
         case RTF_PARAGRAPHBORDERTYPE_DOUBLE:
-            strcpy( border, "\\brdrdb" );
+            border = "\\brdrdb";
             break;
 
         // Dotted border
         case RTF_PARAGRAPHBORDERTYPE_DOT:
-            strcpy( border, "\\brdrdot" );
+            border = "\\brdrdot";
             break;
 
         // Dashed border
         case RTF_PARAGRAPHBORDERTYPE_DASH:
-            strcpy( border, "\\brdrdash" );
+            border =  "\\brdrdash";
             break;
 
         // Hairline border
         case RTF_PARAGRAPHBORDERTYPE_HAIRLINE:
-            strcpy( border, "\\brdrhair" );
+            border = "\\brdrhair";
             break;
 
         // Inset border
         case RTF_PARAGRAPHBORDERTYPE_INSET:
-            strcpy( border, "\\brdrinset" );
+            border = "\\brdrinset";
             break;
 
         // Dashed border (small)
         case RTF_PARAGRAPHBORDERTYPE_SDASH:
-            strcpy( border, "\\brdrdashsm" );
+            border = "\\brdrdashsm";
             break;
 
         // Dot-dashed border
         case RTF_PARAGRAPHBORDERTYPE_DOTDASH:
-            strcpy( border, "\\brdrdashd" );
+            border = "\\brdrdashd";
             break;
 
         // Dot-dot-dashed border
         case RTF_PARAGRAPHBORDERTYPE_DOTDOTDASH:
-            strcpy( border, "\\brdrdashdd" );
+            border = "\\brdrdashdd";
             break;
 
         // Outset border
         case RTF_PARAGRAPHBORDERTYPE_OUTSET:
-            strcpy( border, "\\brdroutset" );
+            border = "\\brdroutset";
             break;
 
         // Triple border
         case RTF_PARAGRAPHBORDERTYPE_TRIPLE:
-            strcpy( border, "\\brdrtriple" );
+            border = "\\brdrtriple";
             break;
 
         // Wavy border
         case RTF_PARAGRAPHBORDERTYPE_WAVY:
-            strcpy( border, "\\brdrwavy" );
+            border = "\\brdrwavy";
             break;
 
         // Double wavy border
         case RTF_PARAGRAPHBORDERTYPE_DWAVY:
-            strcpy( border, "\\brdrwavydb" );
+            border = "\\brdrwavydb";
             break;
 
         // Striped border
         case RTF_PARAGRAPHBORDERTYPE_STRIPED:
-            strcpy( border, "\\brdrdashdotstr" );
+            border = "\\brdrdashdotstr";
             break;
 
         // Embossed border
         case RTF_PARAGRAPHBORDERTYPE_EMBOSS:
-            strcpy( border, "\\brdremboss" );
+            border = "\\brdremboss";
             break;
 
         // Engraved border
         case RTF_PARAGRAPHBORDERTYPE_ENGRAVE:
-            strcpy( border, "\\brdrengrave" );
+            border = "\\brdrengrave";
             break;
     }
 
-    return border;
+    return border.c_str();
 }
 
 
 // Gets shading name
 const char* librtf::get_shadingname( int shading_type, bool cell )
 {
-    static char shading[20] = {0};
-
-    memset( shading, 0, 20 );
+    static string shading;
+    
+    if( shading.size() > 0 )
+        shading.clear();
 
     if ( cell == false )
     {
@@ -1672,62 +1700,62 @@ const char* librtf::get_shadingname( int shading_type, bool cell )
 
             // Horizontal background pattern
             case RTF_PARAGRAPHSHADINGTYPE_HORIZ:
-                strcpy( shading, "\\bghoriz" );
+                shading = "\\bghoriz";
                 break;
 
             // Vertical background pattern
             case RTF_PARAGRAPHSHADINGTYPE_VERT:
-                strcpy( shading, "\\bgvert" );
+                shading = "\\bgvert";
                 break;
 
             // Forward diagonal background pattern
             case RTF_PARAGRAPHSHADINGTYPE_FDIAG:
-                strcpy( shading, "\\bgfdiag" );
+                shading = "\\bgfdiag";
                 break;
 
             // Backward diagonal background pattern
             case RTF_PARAGRAPHSHADINGTYPE_BDIAG:
-                strcpy( shading, "\\bgbdiag" );
+                shading = "\\bgbdiag";
                 break;
 
             // Cross background pattern
             case RTF_PARAGRAPHSHADINGTYPE_CROSS:
-                strcpy( shading, "\\bgcross" );
+                shading = "\\bgcross";
                 break;
 
             // Diagonal cross background pattern
             case RTF_PARAGRAPHSHADINGTYPE_CROSSD:
-                strcpy( shading, "\\bgdcross" );
+                shading = "\\bgdcross";
                 break;
 
             // Dark horizontal background pattern
             case RTF_PARAGRAPHSHADINGTYPE_DHORIZ:
-                strcpy( shading, "\\bgdkhoriz" );
+                shading = "\\bgdkhoriz";
                 break;
 
             // Dark vertical background pattern
             case RTF_PARAGRAPHSHADINGTYPE_DVERT:
-                strcpy( shading, "\\bgdkvert" );
+                shading = "\\bgdkvert";
                 break;
 
             // Dark forward diagonal background pattern
             case RTF_PARAGRAPHSHADINGTYPE_DFDIAG:
-                strcpy( shading, "\\bgdkfdiag" );
+                shading = "\\bgdkfdiag";
                 break;
 
             // Dark backward diagonal background pattern
             case RTF_PARAGRAPHSHADINGTYPE_DBDIAG:
-                strcpy( shading, "\\bgdkbdiag" );
+                shading = "\\bgdkbdiag";
                 break;
 
             // Dark cross background pattern
             case RTF_PARAGRAPHSHADINGTYPE_DCROSS:
-                strcpy( shading, "\\bgdkcross" );
+                shading = "\\bgdkcross";
                 break;
 
             // Dark diagonal cross background pattern
             case RTF_PARAGRAPHSHADINGTYPE_DCROSSD:
-                strcpy( shading, "\\bgdkdcross" );
+                shading = "\\bgdkdcross";
                 break;
         }
     }
@@ -1741,65 +1769,65 @@ const char* librtf::get_shadingname( int shading_type, bool cell )
 
             // Horizontal background pattern
             case RTF_CELLSHADINGTYPE_HORIZ:
-                strcpy( shading, "\\clbghoriz" );
+                shading = "\\clbghoriz";
                 break;
 
             // Vertical background pattern
             case RTF_CELLSHADINGTYPE_VERT:
-                strcpy( shading, "\\clbgvert" );
+                shading = "\\clbgvert";
                 break;
 
             // Forward diagonal background pattern
             case RTF_CELLSHADINGTYPE_FDIAG:
-                strcpy( shading, "\\clbgfdiag" );
+                shading = "\\clbgfdiag";
                 break;
 
             // Backward diagonal background pattern
             case RTF_CELLSHADINGTYPE_BDIAG:
-                strcpy( shading, "\\clbgbdiag" );
+                shading = "\\clbgbdiag";
                 break;
 
             // Cross background pattern
             case RTF_CELLSHADINGTYPE_CROSS:
-                strcpy( shading, "\\clbgcross" );
+                shading = "\\clbgcross";
                 break;
 
             // Diagonal cross background pattern
             case RTF_CELLSHADINGTYPE_CROSSD:
-                strcpy( shading, "\\clbgdcross" );
+                shading = "\\clbgdcross";
                 break;
 
             // Dark horizontal background pattern
             case RTF_CELLSHADINGTYPE_DHORIZ:
-                strcpy( shading, "\\clbgdkhoriz" );
+                shading = "\\clbgdkhoriz";
                 break;
 
             // Dark vertical background pattern
             case RTF_CELLSHADINGTYPE_DVERT:
-                strcpy( shading, "\\clbgdkvert" );
+                shading = "\\clbgdkvert";
                 break;
 
             // Dark forward diagonal background pattern
             case RTF_CELLSHADINGTYPE_DFDIAG:
-                strcpy( shading, "\\clbgdkfdiag" );
+                shading = "\\clbgdkfdiag";
                 break;
 
             // Dark backward diagonal background pattern
             case RTF_CELLSHADINGTYPE_DBDIAG:
-                strcpy( shading, "\\clbgdkbdiag" );
+                shading = "\\clbgdkbdiag";
                 break;
 
             // Dark cross background pattern
             case RTF_CELLSHADINGTYPE_DCROSS:
-                strcpy( shading, "\\clbgdkcross" );
+                shading = "\\clbgdkcross";
                 break;
 
             // Dark diagonal cross background pattern
             case RTF_CELLSHADINGTYPE_DCROSSD:
-                strcpy( shading, "\\clbgdkdcross" );
+                shading = "\\clbgdkdcross";
                 break;
         }
     }
 
-    return shading;
+    return shading.c_str();
 }
