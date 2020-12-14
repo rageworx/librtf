@@ -3,10 +3,10 @@ A simple library for writing RTF
 
 ### Supported subsystems
 
-* POSIX, any subsystem except M$VC.
+* MinGW-W64
 
 ### Required
-* G++
+* MinGW-W64 G++
 
 ### How to build ?
 * library:
