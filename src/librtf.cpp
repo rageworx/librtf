@@ -1,9 +1,10 @@
+#include <windows.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 
-#include <windows.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <io.h>
@@ -45,7 +46,8 @@ static void strcats( char* ob, const char* ib, size_t obsz )
 }
 
 // Creates new RTF document
-RTF_ERROR_TYPE librtf::open( const char* filename, const char* fonts, const char* colors, RTF_DOCUMENT_FORMAT* fmt )
+RTF_ERROR_TYPE librtf::open( const char* filename, const char* fonts, const char* colors,
+                             RTF_DOCUMENT_FORMAT* fmt )
 {
     // Set error flag
     RTF_ERROR_TYPE error = RTF_SUCCESS;
@@ -80,14 +82,30 @@ RTF_ERROR_TYPE librtf::open( const char* filename, const char* fonts, const char
     {
         // Write RTF document header
         if ( librtf::write_header() == false )
+        {
+            fclose( rtfFile );
+            rtfFile = NULL;
             error = RTF_HEADER_ERROR;
+            return error;
+        }
 
         // Write RTF document formatting properties
         if ( librtf::write_documentformat() == false )
+        {
+            fclose( rtfFile );
+            rtfFile = NULL;
             error = RTF_DOCUMENTFORMAT_ERROR;
+            return error;
+        }
 
         // Create first RTF document section with default formatting
-        librtf::write_sectionformat();
+        if ( librtf::write_sectionformat() == false )
+        {
+            fclose( rtfFile );
+            rtfFile = NULL;
+            error = RTF_SECTIONFORMAT_ERROR;
+            return error;
+        }
     }
     else
     {
@@ -118,8 +136,16 @@ RTF_ERROR_TYPE librtf::close()
         fwrite( rtfText, 1, strlen(rtfText), rtfFile );
 
         // Close RTF document
-        if ( fclose(rtfFile) )
+        if ( fclose(rtfFile) != 0 )
             error = RTF_CLOSE_ERROR;
+
+        rtfFile = NULL;
+    }
+
+    if ( rtfParFormat.paragraphText  != NULL )
+    {
+        delete[] rtfParFormat.paragraphText;
+        rtfParFormat.paragraphText = NULL;
     }
 
     // Return error flag
@@ -135,12 +161,22 @@ bool librtf::write_header()
     // Standard RTF document header
     string wrbuff;
 
-    wrbuff += "{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl";
-    wrbuff += rtfFontTable;
-    wrbuff += "}{\\colortbl";
-    wrbuff += rtfColorTable;
-    wrbuff += "}{\\*\\generator librtf v1.2;}";
-    wrbuff += "\n{\\info{\\author librtf v1.2}{\\company ETC Company LTD.}}";
+    if ( rtfFontTable.size() > 0 )
+    {
+        wrbuff += "{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl";
+        wrbuff += rtfFontTable;
+        wrbuff += "}";
+    }
+
+    if ( rtfColorTable.size() > 0 )
+    {
+        wrbuff += "{\\colortbl";
+        wrbuff += rtfColorTable;
+        wrbuff += "}";
+    }
+
+    wrbuff += "{\\*\\generator librtf v1.2;}\n";
+    wrbuff += "{\\info{\\author none}{\\company none}}";
 
     // Writes standard RTF document header part
     if ( rtfFile != NULL )
@@ -158,7 +194,6 @@ bool librtf::write_header()
     // Return error flag
     return result;
 }
-
 
 // Sets global RTF library params
 void librtf::init()
@@ -198,7 +233,6 @@ void librtf::init()
     // Set default formatting
     librtf::set_defaultformat();
 }
-
 
 // Sets default RTF document formatting
 void librtf::set_defaultformat()
@@ -334,9 +368,6 @@ void librtf::set_fonttable( const char* fonts )
 
     char* tmpb = tmpbsrc;
 
-    if ( tmpb == NULL )
-        return;
-
     // Clear old font table
     if ( rtfFontTable.size() > 0 )
         rtfFontTable.clear();
@@ -431,7 +462,6 @@ void librtf::set_documentformat( RTF_DOCUMENT_FORMAT* df )
     }
 }
 
-
 // Writes RTF document formatting properties
 bool librtf::write_documentformat()
 {
@@ -443,10 +473,14 @@ bool librtf::write_documentformat()
 
     snprintf( rtfText, 1024,
               "\\viewkind%d\\viewscale%d\\paperw%d\\paperh%d\\margl%d\\margr%d\\margt%d\\margb%d\\gutter%d",
-              rtfDocFormat.viewKind, rtfDocFormat.viewScale,
-              rtfDocFormat.paperWidth, rtfDocFormat.paperHeight,
-              rtfDocFormat.marginLeft, rtfDocFormat.marginRight,
-              rtfDocFormat.marginTop, rtfDocFormat.marginBottom,
+              rtfDocFormat.viewKind,
+              rtfDocFormat.viewScale,
+              rtfDocFormat.paperWidth,
+              rtfDocFormat.paperHeight,
+              rtfDocFormat.marginLeft,
+              rtfDocFormat.marginRight,
+              rtfDocFormat.marginTop,
+              rtfDocFormat.marginBottom,
               rtfDocFormat.gutterWidth );
 
     if ( rtfDocFormat.facingPages )
@@ -479,7 +513,6 @@ void librtf::set_sectionformat(RTF_SECTION_FORMAT* sf)
         memcpy( &rtfSecFormat, sf, sizeof(RTF_SECTION_FORMAT) );
     }
 }
-
 
 // Writes RTF section formatting properties
 bool librtf::write_sectionformat()
@@ -616,10 +649,10 @@ bool librtf::write_paragraphformat()
     // Format new paragraph
     string text;
 
-    if ( rtfParFormat.newParagraph ) 
+    if ( rtfParFormat.newParagraph )
         text += "\\par";
 
-    if ( rtfParFormat.defaultParagraph ) 
+    if ( rtfParFormat.defaultParagraph )
         text += "\\pard";
 
     if ( rtfParFormat.tableText == false )
@@ -797,13 +830,12 @@ bool librtf::write_paragraphformat()
         const char *br = librtf::get_bordername( rtfParFormat.BORDERS.borderType );
         if ( br != NULL )
         {
-            border + br;
+            border += br;
         }
 
         // Set paragraph border width
         char brd[100] = {0};
-        snprintf( brd, 100,
-                  "\\brdrw%d\\brsp%d",
+        snprintf( brd, 100, "\\brdrw%d\\brsp%d",
                   rtfParFormat.BORDERS.borderWidth,
                   rtfParFormat.BORDERS.borderSpace );
         border += brd;
@@ -811,8 +843,7 @@ bool librtf::write_paragraphformat()
 
         // Set paragraph border color
         char brdcol[100] = {0};
-        snprintf( brdcol, 100,
-                  "\\brdrcf%d",
+        snprintf( brdcol, 100, "\\brdrcf%d",
                   rtfParFormat.BORDERS.borderColor );
         text += brdcol;
     }
@@ -998,24 +1029,27 @@ bool librtf::write_paragraphformat()
     }
 
     // Set paragraph tabbed text
-    if ( rtfParFormat.tabbedText == false )
+    if ( rtfParFormat.paragraphText != NULL )
     {
-        snprintf( rtfText, 4096,
-                  "\n%s\\fi%d\\li%d\\ri%d\\sb%d\\sa%d\\sl%d%s %s",
-                  text.c_str(),
-                  rtfParFormat.firstLineIndent,
-                  rtfParFormat.leftIndent,
-                  rtfParFormat.rightIndent,
-                  rtfParFormat.spaceBefore,
-                  rtfParFormat.spaceAfter,
-                  rtfParFormat.lineSpacing,
-                  font.c_str(),
-                  rtfParFormat.paragraphText );
-    }
-    else
-    {
-        snprintf( rtfText, 4096, "\\tab %s",
-                  rtfParFormat.paragraphText );
+        if ( rtfParFormat.tabbedText == false )
+        {
+            snprintf( rtfText, 4096,
+                      "\n%s\\fi%d\\li%d\\ri%d\\sb%d\\sa%d\\sl%d%s %s",
+                      text.c_str(),
+                      rtfParFormat.firstLineIndent,
+                      rtfParFormat.leftIndent,
+                      rtfParFormat.rightIndent,
+                      rtfParFormat.spaceBefore,
+                      rtfParFormat.spaceAfter,
+                      rtfParFormat.lineSpacing,
+                      font.c_str(),
+                      rtfParFormat.paragraphText );
+        }
+        else
+        {
+            snprintf( rtfText, 4096, "\\tab %s",
+                      rtfParFormat.paragraphText );
+        }
     }
 
     // Writes RTF paragraph formatting properties
@@ -1039,14 +1073,22 @@ RTF_ERROR_TYPE librtf::start_paragraph( const char* text, bool newPar )
     // Set error flag
     RTF_ERROR_TYPE error = RTF_ERROR;
 
+    if ( rtfParFormat.paragraphText != NULL )
+    {
+        delete[] rtfParFormat.paragraphText;
+        rtfParFormat.paragraphText = NULL;
+    }
+
     if ( text != NULL )
     {
         // Copy paragraph text
-        rtfParFormat.paragraphText = new char[strlen(text)];
+        size_t sl = strlen(text);
+        rtfParFormat.paragraphText = new char[sl+1];
 
         if ( rtfParFormat.paragraphText != NULL )
         {
-            strcpy( rtfParFormat.paragraphText, text );
+            memset( rtfParFormat.paragraphText, 0, sl+1 );
+            memcpy( rtfParFormat.paragraphText, text, sl );
 
             // Set new paragraph
             rtfParFormat.newParagraph = newPar;
@@ -1096,122 +1138,104 @@ RTF_ERROR_TYPE librtf::load_image( const char* image, int width, int height )
     // Check image type by file extension
     bool err = false;
 
-    if ( strstr(image,".bmp") == NULL )
-    {
-        if ( strstr(image,".jpg") == NULL )
-        {
-            if ( strstr(image,".jpeg") == NULL )
-            {
-                if (strstr(image,".gif") == NULL )
-                    err = true;
-            }
-        }
-    }
-
     // If valid image type
-    if ( err == false )
+    // Free IPicture object
+    if ( rtfPicture != NULL )
     {
-        // Free IPicture object
-        if ( rtfPicture != NULL )
-        {
-            rtfPicture->Release();
-            rtfPicture = NULL;
-        }
-
-        // Read image file
-        int imageFile = _open( image, _O_RDONLY | _O_BINARY );
-        struct _stat st;
-        _fstat( imageFile, &st );
-        DWORD nSize = st.st_size;
-        BYTE* pBuff = new BYTE[nSize];
-        _read( imageFile, pBuff, nSize );
-        // Alocate memory for image data
-        HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, nSize);
-        void* pData = GlobalLock(hGlobal);
-        memcpy(pData, pBuff, nSize);
-        GlobalUnlock(hGlobal);
-        // Load image using OLE
-        IStream* pStream = NULL;
-        if ( CreateStreamOnHGlobal(hGlobal, TRUE, &pStream) == S_OK )
-        {
-            HRESULT hr;
-
-            if ((hr = OleLoadPicture( pStream, nSize, FALSE, IID_IPicture, (LPVOID *)&rtfPicture)) != S_OK)
-                error = RTF_IMAGE_ERROR;
-
-            pStream->Release();
-        }
-        delete []pBuff;
-        _close(imageFile);
-
-        // If image is loaded
-        if ( rtfPicture != NULL )
-        {
-            // Calculate image size
-            long hmWidth = 0;
-            long hmHeight = 0;
-            rtfPicture->get_Width(&hmWidth);
-            rtfPicture->get_Height(&hmHeight);
-            int nWidth  = MulDiv( hmWidth, GetDeviceCaps(GetDC(NULL),LOGPIXELSX), 2540 );
-            int nHeight = MulDiv( hmHeight, GetDeviceCaps(GetDC(NULL),LOGPIXELSY), 2540 );
-
-            // Create metafile;
-            HDC hdcMeta = CreateMetaFile(NULL);
-
-            // Render picture to metafile
-            rtfPicture->Render( hdcMeta, 0, 0, nWidth, nHeight, 0, hmHeight, hmWidth, -hmHeight, NULL );
-
-            // Close metafile
-            HMETAFILE hmf = CloseMetaFile(hdcMeta);
-
-            // Get metafile data
-            UINT size = GetMetaFileBitsEx( hmf, 0, NULL );
-            BYTE* buffer = new BYTE[size];
-            GetMetaFileBitsEx( hmf, size, buffer );
-            DeleteMetaFile(hmf);
-
-            // Convert metafile binary data to hexadecimal
-            char* hexstr = librtf::bin_hex_convert( buffer, size );
-            delete []buffer;
-
-            // Format picture paragraph
-            RTF_PARAGRAPH_FORMAT* pf = librtf::get_paragraphformat();
-            pf->paragraphText = NULL;
-            librtf::write_paragraphformat();
-
-            // Writes RTF picture data
-            char rtfText[128] = {0};
-            snprintf( rtfText, 128,
-                      "\n{\\pict\\wmetafile8\\picwgoal%d\\pichgoal%d\\picscalex%d\\picscaley%d\n",
-                      hmWidth, hmHeight, width, height );
-
-            if ( fwrite( rtfText, 1, strlen(rtfText), rtfFile ) < strlen(rtfText) )
-            {
-                error = RTF_IMAGE_ERROR;
-                return error;
-            }
-
-            fwrite( hexstr, 1, 2*size, rtfFile );
-
-            delete[] hexstr;
-
-            strncpy( rtfText, "}", 128 );
-            fwrite( rtfText, 1, strlen(rtfText), rtfFile );
-
-            error = RTF_SUCCESS;
-        }
+        rtfPicture->Release();
+        rtfPicture = NULL;
     }
-    else
+
+    // Read image file
+    int imageFile = _open( image, _O_RDONLY | _O_BINARY );
+    struct _stat st;
+    _fstat( imageFile, &st );
+    DWORD nSize = st.st_size;
+    BYTE* pBuff = new BYTE[nSize];
+    _read( imageFile, pBuff, nSize );
+
+    // Alocate memory for image data
+    HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, nSize);
+    void* pData = GlobalLock(hGlobal);
+    memcpy(pData, pBuff, nSize);
+    GlobalUnlock(hGlobal);
+
+    // Load image using OLE
+    IStream* pStream = NULL;
+
+    if ( CreateStreamOnHGlobal(hGlobal, TRUE, &pStream) == S_OK )
     {
+        HRESULT hr;
+
+        if ((hr = OleLoadPicture( pStream, nSize, FALSE, IID_IPicture, (LPVOID *)&rtfPicture)) != S_OK)
+            error = RTF_IMAGE_ERROR;
+
+        pStream->Release();
+    }
+
+    delete []pBuff;
+    _close(imageFile);
+
+    // If image is loaded
+    if ( rtfPicture != NULL )
+    {
+        // Calculate image size
+        long hmWidth = 0;
+        long hmHeight = 0;
+        rtfPicture->get_Width(&hmWidth);
+        rtfPicture->get_Height(&hmHeight);
+        int nWidth  = MulDiv( hmWidth, GetDeviceCaps(GetDC(NULL),LOGPIXELSX), 2540 );
+        int nHeight = MulDiv( hmHeight, GetDeviceCaps(GetDC(NULL),LOGPIXELSY), 2540 );
+
+        // Create metafile;
+        HDC hdcMeta = CreateMetaFile(NULL);
+
+        // Render picture to metafile
+        rtfPicture->Render( hdcMeta, 0, 0, nWidth, nHeight, 0, hmHeight, hmWidth, -hmHeight, NULL );
+
+        // Close metafile
+        HMETAFILE hmf = CloseMetaFile(hdcMeta);
+
+        // Get metafile data
+        UINT size = GetMetaFileBitsEx( hmf, 0, NULL );
+        BYTE* buffer = new BYTE[size];
+        GetMetaFileBitsEx( hmf, size, buffer );
+        DeleteMetaFile(hmf);
+
+        // Convert metafile binary data to hexadecimal
+        char* hexstr = librtf::bin_hex_convert( buffer, size );
+        delete []buffer;
+
+        // Format picture paragraph
+        RTF_PARAGRAPH_FORMAT* pf = librtf::get_paragraphformat();
+        pf->paragraphText = NULL;
+        librtf::write_paragraphformat();
+
         // Writes RTF picture data
-        char rtfText[] = "\n\\par\\pard *** Error! Wrong image format ***\\par";
+        char rtfText[128] = {0};
+        snprintf( rtfText, 128,
+                  "\n{\\pict\\wmetafile8\\picwgoal%d\\pichgoal%d\\picscalex%d\\picscaley%d\n",
+                  hmWidth, hmHeight, width, height );
+
+        if ( fwrite( rtfText, 1, strlen(rtfText), rtfFile ) < strlen(rtfText) )
+        {
+            error = RTF_IMAGE_ERROR;
+            return error;
+        }
+
+        fwrite( hexstr, 1, 2*size, rtfFile );
+
+        delete[] hexstr;
+
+        strncpy( rtfText, "}", 128 );
         fwrite( rtfText, 1, strlen(rtfText), rtfFile );
+
+        error = RTF_SUCCESS;
     }
 
     // Return error flag
     return error;
 }
-
 
 // Converts binary data to hex
 char* librtf::bin_hex_convert( const unsigned char* binary, size_t size )
@@ -1459,7 +1483,7 @@ RTF_ERROR_TYPE librtf::start_tablecell(int rightMargin)
     {
         // Right cell border
         const char* border = librtf::get_bordername(rtfCellFormat.borderRight.BORDERS.borderType);
-        
+
         if ( border != NULL )
         {
             snprintf( tbclbrr, 1024,
@@ -1686,7 +1710,7 @@ const char* librtf::get_bordername(int border_type)
 const char* librtf::get_shadingname( int shading_type, bool cell )
 {
     static string shading;
-    
+
     if( shading.size() > 0 )
         shading.clear();
 
